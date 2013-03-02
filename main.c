@@ -114,8 +114,6 @@ int main(void) {
   // (32 * 256 / 32768 clocks = 1/4 second)
   sbi(TCCR1, CS12);
   sbi(TCCR1, CS11);
-  //TCCR1 |= (1<<CS13);
-  //TCCR1 |= (1<<CS12);
   sbi(TIMSK, TOIE1); 
   sei();
 	
@@ -130,28 +128,19 @@ int main(void) {
 
   while(1)
   {
-    if (timingSequence[counter] == 1)
-    {
-      // Wait for the randomisation amount
-      for (unsigned char delay = 0; delay < timingRandomisation[randomisationPosition]; delay++)
-        _delay_ms(5);
-        
-      randomisationPosition++;
-      if (randomisationPosition == 15) randomisationPosition = 0; 
-        
-      pulseClock();
-    } 
-    
     counter++;
-    if (counter == 128) counter = 0;
 
-    // fixme: remove while (!overflow), nop in ISR, remove overflow variable
-    set_sleep_mode(SLEEP_MODE_IDLE); // Set sleep mode as idle
-    sleep_mode(); // System sleeps here   
+    if (counter == 4) {
+      pulseClock();
+      counter = 0;
+    }
+
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_mode(); // system sleeps here   
   } 
 }
 
-// Timer 1 interrupt
+// Timer 1 interrupt (will wake system from idle sleep mode)
 ISR(TIMER1_OVF_vect) {
   _NOP();
 }
