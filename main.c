@@ -127,9 +127,16 @@ int main(void) {
 	PORTB |= (1<<PB2); // Turn on pull-up on unused pin
 	
   unsigned char counter = 0;
+  uint16_t compensation_counter = 0;
 
   while(1)
   {
+    if (compensation_counter++ >= 63) {
+      pulseClock();
+      compensation_counter = 0;
+      _delay_ms(80);
+    }
+
     if (timingSequence[counter] == 1)
     {
       // Wait for the randomisation amount
