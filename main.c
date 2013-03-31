@@ -152,13 +152,12 @@ int main(void) {
     counter++;
     if (counter == 128) counter = 0;
 
-    // fixme: remove while (!overflow), nop in ISR, remove overflow variable
-    set_sleep_mode(SLEEP_MODE_IDLE); // Set sleep mode as idle
-    sleep_mode(); // System sleeps here   
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_mode(); // system sleeps here   
   } 
 }
 
-// Timer 1 interrupt
+// Timer 1 interrupt (will wake system from idle sleep mode)
 ISR(TIMER1_OVF_vect) {
   _NOP();
 }
