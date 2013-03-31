@@ -108,6 +108,20 @@ void pulseClock(void)
   }   
 } 
 
+// random number seed (will give same sequence every time)
+volatile uint32_t lfsr = 0xbeefcace;
+
+uint32_t rand(void)
+{
+  // http://en.wikipedia.org/wiki/Linear_feedback_shift_register
+  // Galois LFSR: taps: 32 31 29 1; characteristic polynomial: x^32 + x^31 + x^29 + x + 1 */
+    lfsr = (lfsr >> 1) ^ (-(lfsr & 1u) & 0xD0000001u);
+  return lfsr;
+}
+
+#define MODE_SKIP 0 // skip a tick
+#define MODE_FAST 1 // tick twice
+
 int main(void) {
   // Enable timer 1 with 32 prescaler.
   // This gives 1/4 second between each overflow
@@ -126,35 +140,32 @@ int main(void) {
 
 	PORTB |= (1<<PB2); // Turn on pull-up on unused pin
 	
+  uint8_t mode = MODE_SKIP;
   unsigned char counter = 0;
-  uint16_t compensation_counter = 0;
+  uint8_t r;
 
   while(1)
   {
-    if (compensation_counter++ >= 63) {
-      pulseClock();
-      compensation_counter = 0;
-      _delay_ms(80);
-    }
-
-    if (timingSequence[counter] == 1)
-    {
-      // Wait for the randomisation amount
-      for (unsigned char delay = 0; delay < timingRandomisation[randomisationPosition]; delay++)
-        _delay_ms(5);
-        
-      randomisationPosition++;
-      if (randomisationPosition == 15) randomisationPosition = 0; 
-        
-      pulseClock();
-    } 
-    
     counter++;
-    if (counter == 128) counter = 0;
+    r = rand() % 10;
+
+    if (r == 0 && mode == MODE_FAST && counter == 2) {
+      pulseClock(); // extra tick
+      mode = MODE_SKIP;
+    }
+    else if (r == 0 && mode == MODE_SKIP && counter == 4) {
+      // skip a tick
+      mode = MODE_FAST;
+      counter = 0;
+    }
+    else if (counter == 4) {
+      pulseClock();
+      counter = 0;
+    }
 
     set_sleep_mode(SLEEP_MODE_IDLE);
     sleep_mode(); // system sleeps here   
-  } 
+  }
 }
 
 // Timer 1 interrupt (will wake system from idle sleep mode)
