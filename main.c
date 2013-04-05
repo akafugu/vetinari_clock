@@ -36,12 +36,6 @@
 #define X1_BIT PB0
 #define X2_BIT PB1
 
-#define ledPin PB0
-#define GND_BIT PB1
-
-volatile bool led_state = 0; // LED state on/off variable
-volatile bool overflow;
-
 // Define the amount of time (in mS) that the coil should
 // be energised for a 'tick'.  This should be as low as 
 // possible but varies between clock modules...
@@ -88,8 +82,8 @@ void tock(void)
 
 void reset(void)
 {
-  DDRB |= (1<< X1_BIT);
-  DDRB |= (1<< X2_BIT);
+  PORTB |= (1<< X1_BIT);
+  PORTB |= (1<< X2_BIT);
 }
 
 // Send a pulse to the clock module
@@ -116,15 +110,11 @@ int main(void) {
   // (32 * 256 / 32768 clocks = 1/4 second)
   sbi(TCCR1, CS12);
   sbi(TCCR1, CS11);
-  //TCCR1 |= (1<<CS13);
-  //TCCR1 |= (1<<CS12);
   sbi(TIMSK, TOIE1); 
   sei();
 	
 	DDRB = (1<<X1_BIT)|(1<< X2_BIT);
-
-  sbi(DDRB, X2_BIT);
-  cbi(PORTB, X2_BIT);
+  reset();
 
 	PORTB |= (1<<PB2); // Turn on pull-up on unused pin
 	
