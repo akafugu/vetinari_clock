@@ -20,6 +20,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 
 #include <stdbool.h>
 
@@ -46,8 +47,9 @@ volatile bool overflow;
 // possible but varies between clock modules...
 #define ENERGISE_TIME 30
 
-// 64 timing values for 32 seconds
-const unsigned char timingSequence[128] = {
+// 128 timing values for 32 seconds
+// (4 possible movements per second * 32 seconds = 128)
+const uint8_t timingSequence[128] PROGMEM = {
   1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
   0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1,
   0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0,
@@ -62,15 +64,15 @@ const unsigned char timingSequence[128] = {
 // seconds hand to ensure the movement is not always on the 
 // quarter second boundary.  The extra delay is in units of
 // 5 mS.
-const unsigned char timingRandomisation[15] = {
-  0, 13, 16, 4, 20, 5, 8, 2, 14, 18, 3, 7, 15, 10, 17
+const uint8_t timingRandomisation[15] PROGMEM = {
+  0, 6, 8, 2, 10, 3, 4, 1, 7, 9, 5, 3, 8, 5, 9
   };  
 
-unsigned char timingPosition = 0;
-unsigned char randomisationPosition = 0;
+volatile uint8_t timingPosition = 0;
+volatile uint8_t randomisationPosition = 0;
 
 // Global for storing the currently required polarity
-unsigned char polarity = 0;
+volatile uint8_t polarity = 0;
 
 void tick(void)
 {
@@ -126,21 +128,14 @@ int main(void) {
 
 	PORTB |= (1<<PB2); // Turn on pull-up on unused pin
 	
-  unsigned char counter = 0;
-  uint16_t compensation_counter = 0;
+  set_sleep_mode(SLEEP_MODE_IDLE);
 
   while(1)
   {
-    if (compensation_counter++ >= 63) {
-      pulseClock();
-      compensation_counter = 0;
-      _delay_ms(80);
-    }
-
-    if (timingSequence[counter] == 1)
+    if (pgm_read_byte(&timingSequence[timingPosition]) == 1)
     {
       // Wait for the randomisation amount
-      for (unsigned char delay = 0; delay < timingRandomisation[randomisationPosition]; delay++)
+      for (unsigned char delay = 0; delay < pgm_read_byte(&timingRandomisation[randomisationPosition]); delay++)
         _delay_ms(5);
         
       randomisationPosition++;
@@ -149,11 +144,10 @@ int main(void) {
       pulseClock();
     } 
     
-    counter++;
-    if (counter == 128) counter = 0;
+    timingPosition++;
+    if (timingPosition == 128) timingPosition = 0;
 
-    set_sleep_mode(SLEEP_MODE_IDLE);
-    sleep_mode(); // system sleeps here   
+    sleep_mode(); // system sleeps here
   } 
 }
 
