@@ -39,7 +39,7 @@
 // Define the amount of time (in mS) that the coil should
 // be energised for a 'tick'.  This should be as low as 
 // possible but varies between clock modules...
-#define ENERGISE_TIME 35
+#define ENERGISE_TIME 60
 
 // 128 timing values for 32 seconds
 // (4 possible movements per second * 32 seconds = 128)
